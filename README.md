@@ -1,0 +1,1 @@
+This is a text editor that I made. It is a WIP.
