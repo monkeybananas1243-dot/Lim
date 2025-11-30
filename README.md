@@ -1,4 +1,4 @@
-#*This is a Text Editor called Lim.*
+# *This is a Text Editor called Lim.*
 
 ## *Versions* <br>
 It has two versions: PyQt5 built, and TKinter built.
