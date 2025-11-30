@@ -3,6 +3,17 @@ from PyQt5 import QtGui
 from PyQt5.QtGui import QFont
 import sys, os
 
+import tensorflow as tf # type: ignore
+from datasets import load_dataset
+
+train_ds = tf.keras.utils.text_dataset_from_directory(
+    'path/to/train_directory',
+    batch_size=32,
+    validation_split=0.2,
+    subset='training',
+    seed=123
+)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
