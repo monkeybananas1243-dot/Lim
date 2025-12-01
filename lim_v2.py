@@ -6,7 +6,7 @@ import sys, os
 import tensorflow as tf
 from datasets import load_dataset
 
-dataset = load_dataset("squad")
+dataset = load_dataset("HuggingFaceFW/fineweb")
 
 train_data = dataset['train']
 validation_data = dataset['validation']
