@@ -3,13 +3,20 @@ from PyQt5 import QtGui
 from PyQt5.QtGui import QFont
 import sys, os
 
-import tensorflow as tf
 from datasets import load_dataset
 
-dataset = load_dataset("HuggingFaceFW/fineweb")
+streaming_dataset = load_dataset("HuggingFaceFW/fineweb", streaming=True)
+full_train_stream = streaming_dataset['train']
 
-train_data = dataset['train']
-validation_data = dataset['validation']
+train_data_subset = full_train_stream.skip(10000).take(100)
+train_data = list(train_data_subset)
+
+validation_data_subset = full_train_stream.take(10)
+validation_data = list(validation_data_subset)
+
+print(f"Loaded {len(train_data)} training items and {len(validation_data)} validation items.")
+
+print(train_data[1]["text"])
 
 """train_ds = tf.keras.utils.text_dataset_from_directory(
     'path/to/train_directory',
