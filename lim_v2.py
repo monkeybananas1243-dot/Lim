@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTextEdit, QVBoxLayout, 
     QPushButton, QFileDialog, QMessageBox, QWidget, QHBoxLayout, QSpinBox, QStyle
 )
+
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QSize
 
@@ -13,6 +14,7 @@ import regex as re
 import requests
 from bs4 import BeautifulSoup
 
+#* Scrapes Wikipedia
 def scrape(query):
     search_url = f"https://en.wikipedia.org/wiki/{urllib.parse.quote(query.strip())}"
 
@@ -136,6 +138,7 @@ class MainWindow(QMainWindow):
 
             self.setWindowTitle(f"Lim - {file_name_}")
     
+    #* Uses our scraper and outputs the results
     def ask_the_web(self):
 
         cursor = self.text_box.textCursor()
@@ -193,6 +196,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "No Selection", "Please select the text you wish to search for in the text box first.")
             self.statusBar().showMessage("Action failed: No text selected.", 5000)
 
+#* Main loop
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
