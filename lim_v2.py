@@ -40,12 +40,15 @@ def scrape(query):
     
     if not clean_summary:
         return f"\n\nCould not find a relevant summary on Wikipedia. ({search_url})"
-        
-    return (
+    
+    summary_block = (
         f"\n-{clean_summary}"
-        f"\n--------------------------------------------\n"
-        f"Source: Wikipedia ({search_url})"
+        f"\n\n"
     )
+
+    source_url_line = f"\n-{search_url}\n"
+
+    return summary_block, source_url_line
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -147,9 +150,25 @@ class MainWindow(QMainWindow):
                 return
             
             try:
-                result_text = scrape(clean_query)
+                scrape_res = scrape(clean_query)
+
+                summary_block, source_url_line = scrape(clean_query)
+
+                cursor.removeSelectedText()
+
+                cursor.insertText(summary_block)
                 
-                self.text_box.append(result_text)
+                if "Sources:" not in self.text_box.toPlainText():
+                    self.text_box.append("\n\nSources:\n")
+
+                temp_cursor = self.text_box.textCursor() 
+
+                temp_cursor.movePosition(temp_cursor.End)
+
+                temp_cursor.insertText(source_url_line)
+
+                self.text_box.setTextCursor(cursor)
+
                 self.statusBar().showMessage(f"Search complete for '{clean_query}'", 5000)
                 
             except requests.exceptions.HTTPError as http_err:
