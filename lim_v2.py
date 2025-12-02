@@ -1,11 +1,15 @@
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTextEdit, QVBoxLayout, 
-    QPushButton, QFileDialog, QMessageBox, QWidget, QHBoxLayout
+    QPushButton, QFileDialog, QMessageBox, QWidget, QHBoxLayout, QSpinBox, QStyle
 )
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QSize
 
-import sys, os, urllib.parse
+import sys, os
+import urllib.parse
+
+import regex as re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -32,6 +36,7 @@ def scrape(query):
             summary_parts.append(p.get_text())
 
     clean_summary = ' '.join(summary_parts).strip()
+    clean_summary = re.sub(r'\[.*?\]', '', clean_summary)
     
     if not clean_summary:
         return f"\n\nCould not find a relevant summary on Wikipedia. ({search_url})"
@@ -44,6 +49,7 @@ def scrape(query):
 
 class MainWindow(QMainWindow):
     def __init__(self):
+
         super().__init__()
 
         self.setWindowTitle("Lim - Untitled")
@@ -66,6 +72,15 @@ class MainWindow(QMainWindow):
         self.save_normal_file_button.setToolTip("Save the current document")
         self.save_normal_file_button.clicked.connect(self.save_file)
         button_layout.addWidget(self.save_normal_file_button)
+
+        self.set_font_size_box = QSpinBox()
+        self.set_font_size_box.setToolTip("Change font of the main text-box.")
+        self.set_font_size_box.setMinimum(8)
+        self.set_font_size_box.setMaximum(72)
+        self.set_font_size_box.setValue(10)
+        self.set_font_size_box.setSingleStep(1)
+        self.set_font_size_box.valueChanged.connect(lambda value: self.text_box.setFont(QFont("Arial", value)))
+        button_layout.addWidget(self.set_font_size_box)
         
         self.ask_the_web_button = QPushButton("Ask the Web (Selected Text)")
         self.ask_the_web_button.setFont(self.base_font)
@@ -83,6 +98,20 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.text_box)
         
         self.text_box.setAcceptRichText(False)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_S:
+
+            modifiers = event.modifiers()
+            target_modifiers = Qt.ControlModifier
+
+            if modifiers & target_modifiers:
+                self.save_file()
+
+                event.accept()
+                return
+        
+        super().keyPressEvent(event)
 
 
     def save_file(self):
@@ -116,8 +145,6 @@ class MainWindow(QMainWindow):
             if not clean_query:
                 QMessageBox.warning(self, "No Valid Selection", "Please select some meaningful text to search.")
                 return
-
-            self.statusBar().showMessage(f"Searching Wikipedia for: '{clean_query}'...", 0)
             
             try:
                 result_text = scrape(clean_query)
@@ -130,7 +157,7 @@ class MainWindow(QMainWindow):
                      msg = f"Wikipedia page not found for '{clean_query}'. Please try a different query."
                 else:
                     msg = f"HTTP Error occurred: {http_err}"
-                QMessageBox.warning(self, "Scraping Error", msg)
+                QMessageBox.warning(self, "Search Error", msg)
                 self.statusBar().showMessage(f"Error: {http_err}", 5000)
 
             except requests.exceptions.RequestException as req_err:
@@ -147,10 +174,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "No Selection", "Please select the text you wish to search for in the text box first.")
             self.statusBar().showMessage("Action failed: No text selected.", 5000)
 
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
