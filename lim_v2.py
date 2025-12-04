@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
 
             self.setWindowTitle(f"Lim - {file_name_}")
     
-    #* Uses our scraper and outputs the results
+    #* Uses the scraper and outputs the results
     def ask_the_web(self):
 
         cursor = self.text_box.textCursor()
