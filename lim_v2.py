@@ -118,7 +118,6 @@ class MainWindow(QMainWindow):
         
         super().keyPressEvent(event)
 
-
     def save_file(self):
         filename, _ = QFileDialog.getSaveFileName(self,
             "Save File",
