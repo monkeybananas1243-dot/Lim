@@ -1,18 +1,18 @@
-from PyQt5.QtWidgets import (
+from PyQt5.QtWidgets import ( # type: ignore
     QApplication, QMainWindow, QTextEdit, QVBoxLayout, 
     QPushButton, QFileDialog, QMessageBox, QWidget, QHBoxLayout, QSpinBox, QStyle
 )
 
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QFont, QIcon # type: ignore
+from PyQt5.QtCore import Qt, QSize # type: ignore
 
 import sys, os
 import urllib.parse
 
-import regex as re
+import regex as re # type: ignore
 
-import requests
-from bs4 import BeautifulSoup
+import requests # type: ignore
+from bs4 import BeautifulSoup # type: ignore
 
 #* Scrapes Wikipedia
 def scrape(query):
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         self.set_font_size_box.valueChanged.connect(lambda value: self.text_box.setFont(QFont("Arial", value)))
         button_layout.addWidget(self.set_font_size_box)
         
-        self.ask_the_web_button = QPushButton("Ask the Web (Selected Text)")
+        self.ask_the_web_button = QPushButton("Ask the Wiki (Selected Text)")
         self.ask_the_web_button.setFont(self.base_font)
         self.ask_the_web_button.setToolTip("Scrape Wikipedia using the currently selected text as the query.")
         self.ask_the_web_button.clicked.connect(self.ask_the_web)
