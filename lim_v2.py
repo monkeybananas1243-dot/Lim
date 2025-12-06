@@ -1,56 +1,43 @@
-from PyQt5.QtWidgets import ( # type: ignore
+from PyQt5.QtWidgets import ( 
     QApplication, QMainWindow, QTextEdit, QVBoxLayout, 
     QPushButton, QFileDialog, QMessageBox, QWidget, QHBoxLayout, QSpinBox, QStyle
 )
 
-from PyQt5.QtGui import QFont, QIcon # type: ignore
-from PyQt5.QtCore import Qt, QSize # type: ignore
+from PyQt5.QtGui import QFont, QIcon 
+from PyQt5.QtCore import Qt, QSize 
 
 import sys, os
 import urllib.parse
 
-import regex as re # type: ignore
+import wikipedia # type: ignore
 
-import requests # type: ignore
-from bs4 import BeautifulSoup # type: ignore
 
-#* Scrapes Wikipedia
-def scrape(query):
-    search_url = f"https://en.wikipedia.org/wiki/{urllib.parse.quote(query.strip())}"
+def api_scrape(query):
+    try:
+        wikipedia.set_lang("en") 
+            
+        page = wikipedia.page(query, auto_suggest=False)
+        
+        summary_text = wikipedia.summary(query, sentences=3, auto_suggest=False)
+        
+        summary_block = (
+            f"\n-{summary_text}"
+            f"\n\n"
+        )
+        source_url_line = f"\n-{page.url}\n"
+        
+        return summary_block, source_url_line
 
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    except wikipedia.exceptions.PageError:
+        return "\n\nCould not find a relevant page on Wikipedia.", None
+        
+    except wikipedia.exceptions.DisambiguationError as e:
+        options = ', '.join(e.options[:5])
+        return f"\n\nQuery '{query}' is ambiguous. Try a more specific term. Options include: {options}", None
 
-    response = requests.get(search_url, headers=headers, timeout=10)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.content, 'html.parser')
-
-    content_div = soup.find('div', id='mw-content-text')
-
-    paragraphs = content_div.find_all('p', limit=5)
-
-    summary_parts = []
-    
-    for p in paragraphs:
-        if p.get_text().strip() and not p.find_parent('table', class_='infobox'):
-            summary_parts.append(p.get_text())
-
-    clean_summary = ' '.join(summary_parts).strip()
-    clean_summary = re.sub(r'\[.*?\]', '', clean_summary)
-    
-    if not clean_summary:
-        return f"\n\nCould not find a relevant summary on Wikipedia. ({search_url})"
-    
-    summary_block = (
-        f"\n-{clean_summary}"
-        f"\n\n"
-    )
-
-    source_url_line = f"\n-{search_url}\n"
-
-    return summary_block, source_url_line
+    except Exception as e:
+        
+        return f"\n\nAn unexpected API error occurred: {e}", None
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -137,65 +124,51 @@ class MainWindow(QMainWindow):
 
             self.setWindowTitle(f"Lim - {file_name_}")
     
-    #* Uses the scraper and outputs the results
     def ask_the_web(self):
 
         cursor = self.text_box.textCursor()
 
         if cursor.hasSelection():
             query = cursor.selectedText()
-            
             clean_query = query.strip()
             
             if not clean_query:
                 QMessageBox.warning(self, "No Valid Selection", "Please select some meaningful text to search.")
                 return
             
-            try:
-                scrape_res = scrape(clean_query)
-
-                summary_block, source_url_line = scrape(clean_query)
+            summary_or_error, source_url_line = api_scrape(clean_query)
+            
+            if source_url_line is None:
+                
+                cursor.removeSelectedText()
+                cursor.insertText(summary_or_error) 
+                
+                self.statusBar().showMessage(f"Search failed for '{clean_query}' (See error in text box)", 5000)
+                
+                QMessageBox.warning(self, "Search Failed", f"Wikipedia lookup failed. Details in text box or status bar.")
+            
+            else:
+                
+                summary_block = summary_or_error 
 
                 cursor.removeSelectedText()
-
                 cursor.insertText(summary_block)
                 
                 if "Sources:" not in self.text_box.toPlainText():
                     self.text_box.append("\n\nSources:\n")
-
+                
                 temp_cursor = self.text_box.textCursor() 
-
                 temp_cursor.movePosition(temp_cursor.End)
-
                 temp_cursor.insertText(source_url_line)
-
+                
                 self.text_box.setTextCursor(cursor)
 
                 self.statusBar().showMessage(f"Search complete for '{clean_query}'", 5000)
-                
-            except requests.exceptions.HTTPError as http_err:
-                if http_err.response.status_code == 404:
-                     msg = f"Wikipedia page not found for '{clean_query}'. Please try a different query."
-                else:
-                    msg = f"HTTP Error occurred: {http_err}"
-                QMessageBox.warning(self, "Search Error", msg)
-                self.statusBar().showMessage(f"Error: {http_err}", 5000)
-
-            except requests.exceptions.RequestException as req_err:
-                QMessageBox.critical(self, "Network Error", 
-                                     f"Network request failed (e.g., no internet connection, timeout): {req_err}")
-                self.statusBar().showMessage("Network error occurred.", 5000)
-
-            except Exception as e:
-                QMessageBox.critical(self, "Application Error", 
-                                     f"An unexpected error occurred during scraping: {e}")
-                self.statusBar().showMessage("An unexpected error occurred.", 5000)
 
         else:
             QMessageBox.information(self, "No Selection", "Please select the text you wish to search for in the text box first.")
             self.statusBar().showMessage("Action failed: No text selected.", 5000)
 
-#* Main loop
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
