@@ -7,7 +7,6 @@ from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QSize 
 
 import sys, os
-import urllib.parse
 
 class MainWindow(QMainWindow):
     def __init__(self):
