@@ -9,36 +9,6 @@ from PyQt5.QtCore import Qt, QSize
 import sys, os
 import urllib.parse
 
-import wikipedia # type: ignore
-
-
-def api_scrape(query):
-    try:
-        wikipedia.set_lang("en") 
-            
-        page = wikipedia.page(query, auto_suggest=False)
-        
-        summary_text = wikipedia.summary(query, sentences=3, auto_suggest=False)
-        
-        summary_block = (
-            f"\n-{summary_text}"
-            f"\n\n"
-        )
-        source_url_line = f"\n-{page.url}\n"
-        
-        return summary_block, source_url_line
-
-    except wikipedia.exceptions.PageError:
-        return "\n\nCould not find a relevant page on Wikipedia.", None
-        
-    except wikipedia.exceptions.DisambiguationError as e:
-        options = ', '.join(e.options[:5])
-        return f"\n\nQuery '{query}' is ambiguous. Try a more specific term. Options include: {options}", None
-
-    except Exception as e:
-        
-        return f"\n\nAn unexpected API error occurred: {e}", None
-
 class MainWindow(QMainWindow):
     def __init__(self):
 
@@ -74,19 +44,13 @@ class MainWindow(QMainWindow):
         self.set_font_size_box.valueChanged.connect(lambda value: self.text_box.setFont(QFont("Arial", value)))
         button_layout.addWidget(self.set_font_size_box)
         
-        self.ask_the_web_button = QPushButton("Ask the Wiki (Selected Text)")
-        self.ask_the_web_button.setFont(self.base_font)
-        self.ask_the_web_button.setToolTip("Scrape Wikipedia using the currently selected text as the query.")
-        self.ask_the_web_button.clicked.connect(self.ask_the_web)
-        button_layout.addWidget(self.ask_the_web_button)
-        
         button_layout.addStretch(1)
 
         main_layout.addWidget(button_bar)
         
         self.text_box = QTextEdit(self)
         self.text_box.setFont(self.base_font)
-        self.text_box.setPlaceholderText("Start writing here, or select text and click 'Ask the Web' to search Wikipedia.")
+        self.text_box.setPlaceholderText("Start writing here.")
         main_layout.addWidget(self.text_box)
         
         self.text_box.setAcceptRichText(False)
@@ -123,51 +87,6 @@ class MainWindow(QMainWindow):
             file_name_ = os.path.basename(filename)
 
             self.setWindowTitle(f"Lim - {file_name_}")
-    
-    def ask_the_web(self):
-
-        cursor = self.text_box.textCursor()
-
-        if cursor.hasSelection():
-            query = cursor.selectedText()
-            clean_query = query.strip()
-            
-            if not clean_query:
-                QMessageBox.warning(self, "No Valid Selection", "Please select some meaningful text to search.")
-                return
-            
-            summary_or_error, source_url_line = api_scrape(clean_query)
-            
-            if source_url_line is None:
-                
-                cursor.removeSelectedText()
-                cursor.insertText(summary_or_error) 
-                
-                self.statusBar().showMessage(f"Search failed for '{clean_query}' (See error in text box)", 5000)
-                
-                QMessageBox.warning(self, "Search Failed", f"Wikipedia lookup failed. Details in text box or status bar.")
-            
-            else:
-                
-                summary_block = summary_or_error 
-
-                cursor.removeSelectedText()
-                cursor.insertText(summary_block)
-                
-                if "Sources:" not in self.text_box.toPlainText():
-                    self.text_box.append("\n\nSources:\n")
-                
-                temp_cursor = self.text_box.textCursor() 
-                temp_cursor.movePosition(temp_cursor.End)
-                temp_cursor.insertText(source_url_line)
-                
-                self.text_box.setTextCursor(cursor)
-
-                self.statusBar().showMessage(f"Search complete for '{clean_query}'", 5000)
-
-        else:
-            QMessageBox.information(self, "No Selection", "Please select the text you wish to search for in the text box first.")
-            self.statusBar().showMessage("Action failed: No text selected.", 5000)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
